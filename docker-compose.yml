@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: jungle
+      POSTGRES_PASSWORD: jungle
+      POSTGRES_DB: jungle_rounds
+    ports:
+      - "5433:5432"
+    volumes:
+      - jungle_rounds_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jungle -d jungle_rounds"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: jungle
+      DB_PASSWORD: jungle
+      DB_NAME: jungle_rounds
+      DB_AUTO_MIGRATE: "true"
+      EVENT_BUS: local
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  jungle_rounds_pg:

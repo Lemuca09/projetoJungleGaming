@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Jungle Rounds</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #e7e4de;
+        --paper: #f7f6f3;
+        --ink: #1c1b19;
+        --muted: #5c5852;
+        --line: #d4cfc6;
+        --accent: #1e5c3a;
+        --accent-ink: #f7f6f3;
+        --danger: #8a2e2e;
+        --danger-bg: #f8eeeb;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 14px/1.45 "Segoe UI", sans-serif;
+      }
+
+      button, input { font: inherit; color: inherit; }
+      button { cursor: pointer; }
+      :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        min-height: 48px;
+        padding: 8px 20px;
+        background: #1c1b19;
+        color: #f4f1ea;
+      }
+
+      .brand { font-weight: 650; }
+      .brand span { margin-left: 10px; font-weight: 400; color: #b9b3a8; }
+
+      .status { display: flex; gap: 18px; font-size: 12px; color: #d7d1c7; }
+      .status i {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        margin-right: 6px;
+        border-radius: 50%;
+        background: #8d877d;
+        vertical-align: 1px;
+      }
+      .status .ok i { background: #7dbe67; }
+      .status .bad i { background: #e07a6a; }
+
+      .wrap { width: min(1080px, calc(100% - 28px)); margin: 18px auto 36px; }
+
+      .layout { display: grid; grid-template-columns: 1fr; gap: 14px; }
+
+      .panel { background: var(--paper); border: 1px solid var(--line); }
+      .panel-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: baseline;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--line);
+      }
+      h2 { margin: 0; font-size: 13px; font-weight: 650; }
+      .panel-head span, .hint { color: var(--muted); font-size: 12px; }
+      .body { padding: 14px; }
+      table + .body,
+      .panel-head:not(:first-child) { border-top: 1px solid var(--line); }
+      .fields,
+      .fields + .toolbar { margin-top: 10px; }
+
+      table { width: 100%; border-collapse: collapse; }
+      th, td {
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+      th { font-size: 12px; font-weight: 650; color: var(--muted); }
+      td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+      tr:last-child td { border-bottom: 0; }
+      .empty { color: var(--muted); }
+
+      .toolbar, .fields { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+      .fields { margin-top: 10px; }
+      label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+      input {
+        width: 100%;
+        height: 32px;
+        padding: 0 8px;
+        border: 1px solid #c8c2b6;
+        border-radius: 2px;
+        background: #fff;
+      }
+      button {
+        height: 32px;
+        padding: 0 12px;
+        border: 1px solid #1c1b19;
+        border-radius: 2px;
+        background: var(--paper);
+      }
+      button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+      button:disabled {
+        border-color: var(--line);
+        background: #f1eee8;
+        color: #9b968e;
+        cursor: not-allowed;
+      }
+
+      .error {
+        margin: 10px 0 0;
+        padding: 8px 10px;
+        background: var(--danger-bg);
+        color: var(--danger);
+        border: 1px solid #e7cfc9;
+      }
+
+      .steps { margin: 0; padding-left: 18px; }
+      .steps li { margin: 3px 0; }
+
+      pre, code, .log { font-family: Consolas, "Cascadia Mono", monospace; }
+      pre {
+        margin: 0;
+        max-height: 220px;
+        overflow: auto;
+        padding: 10px 12px;
+        background: #f3f0ea;
+        border: 1px solid var(--line);
+        font-size: 12px;
+      }
+      .log {
+        list-style: none;
+        max-height: 180px;
+        margin: 0;
+        padding: 0;
+        overflow: auto;
+        font-size: 12px;
+      }
+      .log li { padding: 6px 0; border-bottom: 1px solid var(--line); }
+      .log li:last-child { border-bottom: 0; }
+
+      .section-title { margin: 22px 0 8px; font-size: 13px; font-weight: 650; }
+      .ref td:last-child { width: 36%; }
+      .ref code { font-size: 12px; }
+      .summary { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; font-family: "Segoe UI", sans-serif; }
+
+      details { margin-top: 14px; }
+      details summary { cursor: pointer; }
+      details p, .notes { margin: 8px 0; color: var(--muted); }
+      .notes { padding-left: 18px; }
+
+      footer { margin-top: 14px; color: var(--muted); font-size: 12px; }
+
+      @media (min-width: 900px) {
+        .layout { grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr); }
+        .fields input { width: 148px; }
+      }
+
+      @media (max-width: 640px) {
+        .topbar { align-items: flex-start; flex-direction: column; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">Jungle Rounds <span>rodadas</span></div>
+      <div class="status">
+        <span id="db-pill"><i></i><b>banco…</b></span>
+        <span id="live-pill"><i></i><b>tempo real…</b></span>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <div class="layout">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Placar</h2>
+            <span id="match-state">nenhuma rodada</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Pos.</th>
+                <th>Jogador</th>
+                <th class="num">Pontos</th>
+              </tr>
+            </thead>
+            <tbody id="board"></tbody>
+          </table>
+          <div class="body">
+            <div class="toolbar">
+              <button id="open" class="primary" type="button">Abrir rodada</button>
+              <button id="reload" type="button" disabled>Recarregar</button>
+              <button id="finish" type="button" disabled>Encerrar</button>
+            </div>
+            <form id="score-form" class="fields">
+              <label>Jogador <input id="player" name="player" value="luna" maxlength="32" required /></label>
+              <label>Pontos <input id="points" name="points" type="number" min="1" max="100" step="1" value="10" required /></label>
+              <button class="primary" id="score" type="submit" disabled>Registrar</button>
+            </form>
+            <div class="toolbar">
+              <button id="race" type="button" disabled>Simular duas escritas</button>
+            </div>
+            <p class="hint">Envia o jogador e os pontos do formulário duas vezes. Uma grava o valor inteiro. A outra para com 409 e não muda o placar.</p>
+            <p id="error" class="error" role="alert" hidden></p>
+          </div>
+        </section>
+
+        <aside class="panel">
+          <div class="panel-head">
+            <h2>Trilha da ação</h2>
+          </div>
+          <div class="body">
+            <ol id="steps" class="steps"></ol>
+          </div>
+          <div class="panel-head">
+            <h2>Resposta</h2>
+          </div>
+          <div class="body">
+            <pre id="payload">Nenhuma requisição ainda.</pre>
+          </div>
+          <div class="panel-head">
+            <h2>Log</h2>
+          </div>
+          <div class="body">
+            <ol id="log" class="log"></ol>
+          </div>
+        </aside>
+      </div>
+
+      <h2 class="section-title">Referência</h2>
+      <table class="ref panel">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>No código</th>
+          </tr>
+        </thead>
+        <tbody id="cards"></tbody>
+      </table>
+
+      <details>
+        <summary>Notas para a conversa</summary>
+        <div id="pitch"></div>
+        <ul id="limits" class="notes"></ul>
+      </details>
+
+      <footer>Rodadas de um jogo original. Sem aposta, pagamento ou saldo.</footer>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const state = { match: null, flows: new Map(), busy: false };
+      const board = document.querySelector('#board');
+      const steps = document.querySelector('#steps');
+      const log = document.querySelector('#log');
+      const errorBox = document.querySelector('#error');
+      const payload = document.querySelector('#payload');
+      const matchState = document.querySelector('#match-state');
+      const openButton = document.querySelector('#open');
+      const reloadButton = document.querySelector('#reload');
+      const finishButton = document.querySelector('#finish');
+      const scoreButton = document.querySelector('#score');
+      const raceButton = document.querySelector('#race');
+      const form = document.querySelector('#score-form');
+      const socket = io('/live');
+
+      socket.on('connect', () => setPill('live-pill', 'tempo real ligado', true));
+      socket.on('disconnect', () => setPill('live-pill', 'tempo real caiu', false));
+      socket.on('match.updated', (event) => {
+        if (!state.match || event.match.id !== state.match.id) return;
+        adopt(event.match);
+        pushLog(`evento ${event.reason} · versão ${event.match.version}`);
+        render();
+      });
+
+      openButton.addEventListener('click', () => run('start', () => call('/api/matches', { method: 'POST' })));
+      reloadButton.addEventListener('click', () => run('read', reload));
+      finishButton.addEventListener('click', () => run('finish', () => call(`/api/matches/${state.match.id}/finish`, { method: 'POST' })));
+      raceButton.addEventListener('click', () => run('score', race));
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const playerId = document.querySelector('#player').value.trim();
+        const points = Number(document.querySelector('#points').value);
+        run('score', () => postScore(playerId, points));
+      });
+
+      render();
+      boot();
+
+      async function boot() {
+        try {
+          const [guideResult, healthResult] = await Promise.all([
+            call('/api/guide', { method: 'GET' }, false),
+            call('/api/health', { method: 'GET' }, false),
+          ]);
+          if (healthResult.ok) setPill('db-pill', 'PostgreSQL', true);
+          else setPill('db-pill', 'PostgreSQL indisponível', false);
+
+          if (!guideResult.ok) {
+            pushLog('guia indisponível');
+            return;
+          }
+          for (const flow of guideResult.body.flows) state.flows.set(flow.id, flow);
+          const cards = document.querySelector('#cards');
+          renderRows(guideResult.body.requirements, cards);
+          renderRows(guideResult.body.success, cards);
+          for (const sentence of guideResult.body.pitch) {
+            const p = document.createElement('p');
+            p.textContent = sentence;
+            document.querySelector('#pitch').append(p);
+          }
+          for (const limit of guideResult.body.limits) {
+            const li = document.createElement('li');
+            li.textContent = limit;
+            document.querySelector('#limits').append(li);
+          }
+          showFlow('start');
+        } catch {
+          setPill('db-pill', 'sem resposta', false);
+          pushLog('API sem resposta');
+        }
+      }
+
+      async function reload() {
+        if (!state.match) return null;
+        return call(`/api/matches/${state.match.id}`, { method: 'GET' });
+      }
+
+      async function postScore(playerId, points, headers) {
+        return call(`/api/matches/${state.match.id}/scores`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ playerId, points }),
+        });
+      }
+
+      async function race() {
+        const playerId = document.querySelector('#player').value.trim();
+        const points = Number(document.querySelector('#points').value);
+        if (!playerId || !Number.isInteger(points) || points < 1 || points > 100) {
+          return {
+            ok: false,
+            status: 400,
+            requestId: '',
+            body: { message: 'Informe jogador e pontos inteiros de 1 a 100.' },
+          };
+        }
+        const attempt = () => postScore(playerId, points, { 'x-conflict-demo': '1' });
+        const [first, second] = await Promise.all([attempt(), attempt()]);
+        pushLog(`${playerId} ${points} → ${first.status} · ${second.status}`);
+        const failed = [first, second].find((result) => !result.ok);
+        const current = await reload();
+        if (failed) {
+          payload.textContent = JSON.stringify(failed.body, null, 2);
+          showError(messageOf(failed.body, failed.status), failed.requestId);
+        }
+        return current ?? failed ?? first;
+      }
+
+      async function run(flowId, action) {
+        if (state.busy) return;
+        state.busy = true;
+        render();
+        showFlow(flowId);
+        clearError();
+        try {
+          const result = await action();
+          adopt(result?.body);
+          if (result && !result.ok) showError(messageOf(result.body, result.status), result.requestId);
+          if (result?.ok && flowId === 'start') subscribe(state.match.id);
+        } finally {
+          state.busy = false;
+          render();
+        }
+      }
+
+      function adopt(body) {
+        if (!body?.id) return;
+        if (!state.match || body.id !== state.match.id || body.version >= state.match.version) {
+          state.match = body;
+        }
+      }
+
+      function subscribe(matchId) {
+        socket.emit('match.subscribe', { matchId }, (response) => {
+          pushLog(response?.ok ? `inscrito em ${matchId.slice(0, 8)}` : 'falha ao inscrever');
+        });
+      }
+
+      async function call(path, options, remember = true) {
+        const response = await fetch(path, {
+          ...options,
+          headers: { 'content-type': 'application/json', ...(options.headers || {}) },
+        });
+        const requestId = response.headers.get('x-request-id') || '';
+        let body = null;
+        try { body = await response.json(); } catch { body = null; }
+        const result = { ok: response.ok, status: response.status, requestId, body };
+        if (remember) {
+          payload.textContent = JSON.stringify(body, null, 2);
+          pushLog(`${options.method || 'GET'} ${path} → ${response.status}${requestId ? ' · ' + requestId : ''}`);
+        }
+        return result;
+      }
+
+      function render() {
+        const match = state.match;
+        const open = match?.status === 'open';
+        matchState.textContent = match
+          ? `${match.status === 'open' ? 'aberta' : 'encerrada'} · versão ${match.version} · ${match.id.slice(0, 8)}`
+          : 'nenhuma rodada';
+        reloadButton.disabled = state.busy || !match;
+        finishButton.disabled = state.busy || !open;
+        scoreButton.disabled = state.busy || !open;
+        raceButton.disabled = state.busy || !open;
+        openButton.disabled = state.busy;
+        board.replaceChildren();
+        if (!match) {
+          board.append(emptyRow('Nenhuma rodada aberta.'));
+          return;
+        }
+        if (match.scores.length === 0) {
+          board.append(emptyRow(match.status === 'finished' ? 'Encerrada sem pontos.' : 'Sem pontos ainda.'));
+          return;
+        }
+        for (const score of match.scores) {
+          const tr = document.createElement('tr');
+          const rank = document.createElement('td');
+          rank.textContent = String(score.rank);
+          const name = document.createElement('td');
+          name.textContent = score.playerId;
+          const points = document.createElement('td');
+          points.className = 'num';
+          points.textContent = String(score.points);
+          tr.append(rank, name, points);
+          board.append(tr);
+        }
+      }
+
+      function showFlow(id) {
+        const flow = state.flows.get(id);
+        steps.replaceChildren();
+        if (!flow) return;
+        for (const step of flow.steps) {
+          const li = document.createElement('li');
+          li.textContent = step;
+          steps.append(li);
+        }
+      }
+
+      function pathCode(path) {
+        const code = document.createElement('code');
+        path.split('/').forEach((part, index) => {
+          if (index > 0) {
+            code.append('/');
+            code.append(document.createElement('wbr'));
+          }
+          code.append(part);
+        });
+        return code;
+      }
+
+      function renderRows(items, root) {
+        for (const item of items) {
+          const tr = document.createElement('tr');
+          const name = document.createElement('td');
+          const title = document.createElement('strong');
+          title.textContent = item.title;
+          const summary = document.createElement('span');
+          summary.className = 'summary';
+          summary.textContent = item.summary;
+          name.append(title, summary);
+          const where = document.createElement('td');
+          where.append(pathCode(item.where));
+          tr.append(name, where);
+          root.append(tr);
+        }
+      }
+
+      function emptyRow(text) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 3;
+        td.className = 'empty';
+        td.textContent = text;
+        tr.append(td);
+        return tr;
+      }
+
+      function pushLog(message) {
+        const li = document.createElement('li');
+        li.textContent = `${new Date().toLocaleTimeString('pt-BR')}  ${message}`;
+        log.prepend(li);
+      }
+
+      function showError(text, requestId) {
+        errorBox.hidden = false;
+        errorBox.textContent = requestId ? `${text} (${requestId})` : text;
+      }
+
+      function clearError() {
+        errorBox.hidden = true;
+        errorBox.textContent = '';
+      }
+
+      function messageOf(body, status) {
+        if (!body) return `Erro HTTP ${status}.`;
+        if (Array.isArray(body.message)) return body.message.join(' ');
+        if (typeof body.message === 'string') return body.message;
+        return `Erro HTTP ${status}.`;
+      }
+
+      function setPill(id, text, ok) {
+        const pill = document.querySelector('#' + id);
+        pill.classList.toggle('ok', ok);
+        pill.classList.toggle('bad', !ok);
+        pill.querySelector('b').textContent = text;
+      }
+    </script>
+  </body>
+</html>
